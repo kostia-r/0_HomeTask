@@ -32,8 +32,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define TIMEINTEST 100 //Timeout in test blink
-#define TIMEBTWTEST 500 //Timeout between tests
+#define BLINK_INTERVAL 100
+#define TIMEOUT_BETWEEN_TESTS 500
+#define BASIC_NUMBER_OF_TESTS  5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,7 +45,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+enum
+{
+	LEFT, RIGHT
+} direction;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,110 +61,103 @@ static void MX_GPIO_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void LED_All_On(void) {
+void LED_All_Control(GPIO_PinState state)
+{
 	HAL_GPIO_WritePin(GPIOD,
-	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_SET);
-	HAL_Delay(1000);
+	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, state);
+	HAL_Delay(BLINK_INTERVAL);
 	return;
 }
 
-void LED_All_Blinks(int count) {
+void LED_All_Blinks(uint32_t number_of_tests)
+{
 	HAL_GPIO_WritePin(GPIOD,
-	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin,
-			GPIO_PIN_RESET);
-	for (int i = 0; i < count; i++) {
+	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
+	for (uint32_t i = 0; i < number_of_tests; i++)
+	{
 		HAL_GPIO_WritePin(GPIOD,
-		LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin,
-				GPIO_PIN_SET);
-		HAL_Delay(TIMEINTEST);
+		LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_SET);
+		HAL_Delay(BLINK_INTERVAL);
 		HAL_GPIO_WritePin(GPIOD,
-		LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin,
-				GPIO_PIN_RESET);
-		HAL_Delay(TIMEINTEST);
+		LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
+		HAL_Delay(BLINK_INTERVAL);
 	}
 	return;
 }
 
-void LED_All_off(void) {
-	HAL_GPIO_WritePin(GPIOD,
-	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin,
-			GPIO_PIN_RESET);
-	HAL_Delay(TIMEBTWTEST);
-	return;
-}
-
-void LED_Round_Right_Blink(int count) {
-	uint32_t Led_port = 0x1000;
-	for (int i = 0; i < count; i++) {
-		for (int j = 0; j < 8; j++) {
+void LED_Round_Blink(uint32_t direction, uint32_t number_of_tests)
+{
+	uint32_t Led_port = (direction == LEFT) ? 0x8000 : 0x1000;
+	for (uint32_t i = 0; i < number_of_tests; i++)
+	{
+		for (uint32_t j = 0; j < 8; j++)
+		{
 			HAL_GPIO_TogglePin(GPIOD, Led_port);
-			Led_port = Led_port << 1; //Switch  pins state one by one
-			Led_port = (Led_port <= 0x8000) ? Led_port : 0x1000;
-			HAL_Delay(TIMEINTEST);
+			if (direction == LEFT)
+			{
+				Led_port = Led_port >> 1; //Switch  pins state one by one
+				Led_port = (Led_port >= 0x1000) ? Led_port : 0x8000;
+				HAL_Delay(BLINK_INTERVAL);
+			}
+			else if (direction == RIGHT)
+			{
+				Led_port = Led_port << 1; //Switch  pins state one by one
+				Led_port = (Led_port <= 0x8000) ? Led_port : 0x1000;
+				HAL_Delay(BLINK_INTERVAL);
+			}
+			else
+				return;
 		}
-		LED_All_off();
-	}
-	return;
-}
-void LED_Round_Left_Blink(int count) {
-	uint32_t Led_port = 0x8000;
-	for (int i = 0; i < count; i++) {
-		for (int j = 0; j < 8; j++) {
-			HAL_GPIO_TogglePin(GPIOD, Led_port);
-			Led_port = Led_port >> 1; //Switch  pins state one by one
-			Led_port = (Led_port >= 0x1000) ? Led_port : 0x8000;
-			HAL_Delay(TIMEINTEST);
-		}
-		LED_All_off();
+		LED_All_Control(GPIO_PIN_RESET);
 	}
 	return;
 }
 
-void LED_Running_Lights_Right(int count) {
-	uint32_t Led_port = 0x1000;
-	for (int i = 0; i < count; i++) {
-		for (int j = 0; j < 8; j++) {
+void LED_Running_Lights(uint32_t direction, uint32_t number_of_tests)
+{
+	uint32_t Led_port = (direction == LEFT) ? 0x8000 : 0x1000;
+	for (uint32_t i = 0; i < number_of_tests; i++)
+	{
+		for (uint32_t j = 0; j < 8; j++)
+		{
 			HAL_GPIO_WritePin(GPIOD, Led_port, GPIO_PIN_SET);
-			HAL_Delay(TIMEINTEST);
+			HAL_Delay(BLINK_INTERVAL);
 			HAL_GPIO_WritePin(GPIOD, Led_port, GPIO_PIN_RESET);
-			Led_port = Led_port << 1; //Switch  pins state one by one
-			Led_port = (Led_port <= 0x8000) ? Led_port : 0x1000;
+			if (direction == LEFT)
+			{
+				Led_port = Led_port >> 1; //Switch  pins state one by one
+				Led_port = (Led_port >= 0x1000) ? Led_port : 0x8000;
+			}
+			else if (direction == RIGHT)
+			{
+				Led_port = Led_port << 1; //Switch  pins state one by one
+				Led_port = (Led_port <= 0x8000) ? Led_port : 0x1000;
+			}
+			else
+				return;
 		}
-		LED_All_off();
+		LED_All_Control(GPIO_PIN_RESET);
 	}
 	return;
 }
 
-void LED_Running_Lights_Left(int count) {
-	uint32_t Led_port = 0x8000;
-	for (int i = 0; i < count; i++) {
-		for (int j = 0; j < 8; j++) {
-			HAL_GPIO_WritePin(GPIOD, Led_port, GPIO_PIN_SET);
-			HAL_Delay(TIMEINTEST);
-			HAL_GPIO_WritePin(GPIOD, Led_port, GPIO_PIN_RESET);
-			Led_port = Led_port >> 1; //Switch  pins state one by one
-			Led_port = (Led_port >= 0x1000) ? Led_port : 0x8000;
-		}
-		LED_All_off();
-	}
-	return;
-}
-
-void LED_Pair_Blinking(int count) {
-	for (int i = 0; i < count; i++) {
-		for (int j = 0; j < 2; j++) {
-			if (j % 2 == 0) {
-				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin,
-						GPIO_PIN_SET);
-				HAL_Delay(TIMEINTEST);
-				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin,
-						GPIO_PIN_RESET);
-			} else {
-				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin,
-						GPIO_PIN_SET);
-				HAL_Delay(TIMEINTEST);
-				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin,
-						GPIO_PIN_RESET);
+void LED_Pair_Blinking(uint32_t number_of_tests)
+{
+	for (uint32_t i = 0; i < number_of_tests; i++)
+	{
+		for (uint32_t j = 0; j < 2; j++)
+		{
+			if (j % 2 == 0)
+			{
+				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_SET);
+				HAL_Delay(BLINK_INTERVAL);
+				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_RESET);
+			}
+			else
+			{
+				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_SET);
+				HAL_Delay(BLINK_INTERVAL);
+				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
 			}
 		}
 	}
@@ -172,7 +169,8 @@ void LED_Pair_Blinking(int count) {
  * @brief  The application entry point.
  * @retval int
  */
-int main(void) {
+int main(void)
+{
 	/* USER CODE BEGIN 1 */
 
 	/* USER CODE END 1 */
@@ -201,17 +199,17 @@ int main(void) {
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	while (1) {
-		HAL_Delay(2000);
-		LED_All_On();
-		LED_All_off();
-		LED_All_Blinks(3);
-		LED_Round_Right_Blink(3); //3 - number of blink iterations
-		LED_Round_Left_Blink(3);
-		LED_Running_Lights_Right(3);
-		LED_Running_Lights_Left(3);
-		LED_Pair_Blinking(10);
-		HAL_Delay(2000);
+	while (1)
+	{
+		LED_All_Control(GPIO_PIN_SET);
+		LED_All_Control(GPIO_PIN_RESET);
+		LED_All_Blinks(BASIC_NUMBER_OF_TESTS);
+		LED_Round_Blink(LEFT, BASIC_NUMBER_OF_TESTS);
+		LED_Round_Blink(RIGHT, BASIC_NUMBER_OF_TESTS);
+		LED_Running_Lights(LEFT, BASIC_NUMBER_OF_TESTS);
+		LED_Running_Lights(RIGHT, BASIC_NUMBER_OF_TESTS);
+		LED_Pair_Blinking(BASIC_NUMBER_OF_TESTS << 1);
+		HAL_Delay(TIMEOUT_BETWEEN_TESTS << 2);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -223,9 +221,12 @@ int main(void) {
  * @brief System Clock Configuration
  * @retval None
  */
-void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+void SystemClock_Config(void)
+{
+	RCC_OscInitTypeDef RCC_OscInitStruct =
+	{ 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct =
+	{ 0 };
 
 	/** Configure the main internal regulator output voltage
 	 */
@@ -238,19 +239,20 @@ void SystemClock_Config(void) {
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
 	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
 		Error_Handler();
 	}
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+	{
 		Error_Handler();
 	}
 }
@@ -260,20 +262,20 @@ void SystemClock_Config(void) {
  * @param None
  * @retval None
  */
-static void MX_GPIO_Init(void) {
-	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+static void MX_GPIO_Init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct =
+	{ 0 };
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOD,
-	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin,
-			GPIO_PIN_RESET);
+	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pins : LED_GREEN_Pin LED_ORANGE_Pin LED_RED_Pin LED_BLUE_Pin */
-	GPIO_InitStruct.Pin = LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin
-			| LED_BLUE_Pin;
+	GPIO_InitStruct.Pin = LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -289,11 +291,13 @@ static void MX_GPIO_Init(void) {
  * @brief  This function is executed in case of error occurrence.
  * @retval None
  */
-void Error_Handler(void) {
+void Error_Handler(void)
+{
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
-	while (1) {
+	while (1)
+	{
 	}
 	/* USER CODE END Error_Handler_Debug */
 }
