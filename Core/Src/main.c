@@ -66,7 +66,6 @@ void LED_All_Control(GPIO_PinState state)
 	HAL_GPIO_WritePin(GPIOD,
 	LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, state);
 	HAL_Delay(BLINK_INTERVAL);
-	return;
 }
 
 void LED_All_Blinks(uint32_t number_of_tests)
@@ -82,7 +81,6 @@ void LED_All_Blinks(uint32_t number_of_tests)
 		LED_GREEN_Pin | LED_ORANGE_Pin | LED_RED_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
 		HAL_Delay(BLINK_INTERVAL);
 	}
-	return;
 }
 
 void LED_Round_Blink(uint32_t direction, uint32_t number_of_tests)
@@ -110,7 +108,6 @@ void LED_Round_Blink(uint32_t direction, uint32_t number_of_tests)
 		}
 		LED_All_Control(GPIO_PIN_RESET);
 	}
-	return;
 }
 
 void LED_Running_Lights(uint32_t direction, uint32_t number_of_tests)
@@ -138,30 +135,28 @@ void LED_Running_Lights(uint32_t direction, uint32_t number_of_tests)
 		}
 		LED_All_Control(GPIO_PIN_RESET);
 	}
-	return;
 }
 
 void LED_Pair_Blinking(uint32_t number_of_tests)
 {
+	uint32_t count = 0;
 	for (uint32_t i = 0; i < number_of_tests; i++)
 	{
-		for (uint32_t j = 0; j < 2; j++)
+		if (count % 2 == 0)
 		{
-			if (j % 2 == 0)
-			{
-				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_SET);
-				HAL_Delay(BLINK_INTERVAL);
-				HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_RESET);
-			}
-			else
-			{
-				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_SET);
-				HAL_Delay(BLINK_INTERVAL);
-				HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
-			}
+			HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_SET);
+			HAL_Delay(BLINK_INTERVAL);
+			HAL_GPIO_WritePin(GPIOD, LED_GREEN_Pin | LED_RED_Pin, GPIO_PIN_RESET);
+			count++;
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_SET);
+			HAL_Delay(BLINK_INTERVAL);
+			HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin | LED_BLUE_Pin, GPIO_PIN_RESET);
+			count = 0;
 		}
 	}
-	return;
 }
 /* USER CODE END 0 */
 
